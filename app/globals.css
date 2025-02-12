@@ -2,20 +2,145 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  h1 {
+    @apply font-pixel text-xl md:text-2xl mb-4 md:mb-6 text-pink-500 pixel-borders;
+  }
+  h2 {
+    @apply font-pixel text-lg md:text-xl mb-3 md:mb-4 text-pink-400 pixel-borders-thin;
+  }
+  h3 {
+    @apply font-pixel text-base md:text-lg mb-2 md:mb-3 text-pink-300;
+  }
+  body {
+    @apply font-pixel-body text-base md:text-lg bg-[#0a0a16] text-blue-300;
+  }
+  label {
+    @apply text-blue-400 font-pixel-body text-sm md:text-base;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .pixel-borders {
+    box-shadow: 
+      0 0 0 2px theme('colors.pink.500'),
+      0 0 0 4px theme('colors.pink.700');
+    @apply p-2 md:p-4;
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  .pixel-borders-thin {
+    box-shadow: 
+      0 0 0 1px theme('colors.pink.400'),
+      0 0 0 2px theme('colors.pink.600');
+    @apply p-1 md:p-2;
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .pixel-button {
+    @apply bg-pink-600 text-white px-3 md:px-4 py-2 font-pixel text-sm min-h-[44px] w-full md:w-auto;
+    box-shadow: 
+      inset -2px -2px 0 0 theme('colors.pink.800'),
+      inset 2px 2px 0 0 theme('colors.pink.400');
+    image-rendering: pixelated;
+    transition: all 0.2s;
+    border-radius: 0;
+  }
+
+  .pixel-button:hover {
+    @apply bg-pink-500;
+    transform: translateY(1px);
+    box-shadow: 
+      inset -1px -1px 0 0 theme('colors.pink.700'),
+      inset 1px 1px 0 0 theme('colors.pink.300');
+  }
+
+  .pixel-input {
+    @apply bg-[#1a1a2e] text-blue-100 px-3 py-2 font-pixel-body min-h-[44px] w-full;
+    box-shadow: 
+      inset -1px -1px 0 0 theme('colors.pink.500'),
+      inset 1px 1px 0 0 theme('colors.pink.700');
+    border: none;
+    border-radius: 0;
+    -webkit-appearance: none;
+  }
+
+  .pixel-input:focus {
+    @apply outline-none;
+    box-shadow: 
+      0 0 0 2px theme('colors.pink.500'),
+      inset -1px -1px 0 0 theme('colors.pink.400'),
+      inset 1px 1px 0 0 theme('colors.pink.600');
+  }
+
+  .pixel-card {
+    @apply bg-[#1a1a2e] p-4 md:p-6 w-full;
+    box-shadow: 
+      0 0 0 1px theme('colors.pink.500'),
+      0 0 0 2px theme('colors.pink.700');
+    border-radius: 0;
+  }
+
+  .status-positive {
+    @apply text-green-400;
+  }
+
+  .status-negative {
+    @apply text-pink-400;
+  }
+
+  .status-neutral {
+    @apply text-blue-300;
+  }
+
+  .highlight-primary {
+    @apply text-pink-400;
+  }
+
+  .highlight-secondary {
+    @apply text-blue-400;
+  }
+
+  .highlight-accent {
+    @apply text-green-400;
+  }
+
+  .cyber-header {
+    @apply border-b-2 border-pink-500 pb-2 mb-8;
+  }
+
+  .cyber-grid {
+    @apply grid gap-2 md:gap-4 p-2 md:p-4;
+    background-image: linear-gradient(rgba(255, 192, 203, 0.1) 1px, transparent 1px),
+                     linear-gradient(90deg, rgba(255, 192, 203, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  /* 移动端优化 */
+  @media (max-width: 640px) {
+    .cyber-header {
+      @apply border-b border-pink-500 pb-1 mb-4;
+    }
+
+    select.pixel-input {
+      @apply pr-8;
+      background-image: linear-gradient(45deg, transparent 50%, theme('colors.pink.400') 50%),
+                       linear-gradient(135deg, theme('colors.pink.400') 50%, transparent 50%);
+      background-position: calc(100% - 20px) calc(50% + 2px),
+                         calc(100% - 15px) calc(50% + 2px);
+      background-size: 5px 5px,
+                      5px 5px;
+      background-repeat: no-repeat;
+    }
+
+    input[type="date"].pixel-input {
+      @apply px-2;
+    }
+
+    input[type="checkbox"] {
+      @apply w-5 h-5;
+    }
+  }
 }
