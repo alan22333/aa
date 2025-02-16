@@ -10,6 +10,10 @@ export default function TripDetail() {
   const [users, setUsers] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [newUser, setNewUser] = useState({ name: '' });
+  const [selectedExpense, setSelectedExpense] = useState(null);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
   const [newExpense, setNewExpense] = useState({
     description: '',
     amount: '',
@@ -76,6 +80,70 @@ export default function TripDetail() {
       });
       fetchExpenses();
     }
+  };
+
+  const handleDeleteTrip = async () => {
+    if (confirm('确定要删除这个旅行吗？此操作不可撤销。')) {
+      const response = await fetch(`/api/trips/${params.id}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        router.push('/');
+      }
+    }
+  };
+
+  const handleDeleteExpense = async (expenseId) => {
+    if (confirm('确定要删除这笔费用吗？此操作不可撤销。')) {
+      const response = await fetch(`/api/trips/${params.id}/expenses/${expenseId}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        fetchExpenses();
+      }
+    }
+  };
+
+  const handleEditExpense = (expense) => {
+    setEditingExpense(expense);
+    setNewExpense({
+      description: expense.description,
+      amount: expense.amount.toString(),
+      date: new Date(expense.date).toISOString().split('T')[0],
+      paidById: expense.paidById,
+      participantIds: expense.participants.map(p => p.userId)
+    });
+    setIsEditMode(true);
+  };
+
+  const handleUpdateExpense = async (e) => {
+    e.preventDefault();
+    const response = await fetch(`/api/trips/${params.id}/expenses/${editingExpense.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(newExpense),
+    });
+    if (response.ok) {
+      setNewExpense({
+        description: '',
+        amount: '',
+        date: '',
+        paidById: '',
+        participantIds: []
+      });
+      setIsEditMode(false);
+      setEditingExpense(null);
+      fetchExpenses();
+    }
+  };
+
+  const handleViewExpenseDetails = async (expense) => {
+    const response = await fetch(`/api/trips/${params.id}/expenses/${expense.id}`);
+    const data = await response.json();
+    setSelectedExpense(data);
+    setIsExpenseModalOpen(true);
   };
 
   // 添加计算费用统计的函数
@@ -155,8 +223,16 @@ export default function TripDetail() {
         >
           ← BACK
         </button>
-        <div className="text-green-400 font-pixel text-sm">
-          ID: {params.id}
+        <div className="flex gap-4 items-center">
+          <div className="text-green-400 font-pixel text-sm">
+            ID: {params.id}
+          </div>
+          <button
+            onClick={handleDeleteTrip}
+            className="pixel-button bg-pink-700"
+          >
+            DELETE TRIP
+          </button>
         </div>
       </div>
 
@@ -200,8 +276,8 @@ export default function TripDetail() {
         </div>
 
         <div className="pixel-card">
-          <h2>ADD EXPENSE</h2>
-          <form onSubmit={handleAddExpense} className="space-y-4">
+          <h2>{isEditMode ? 'EDIT EXPENSE' : 'ADD EXPENSE'}</h2>
+          <form onSubmit={isEditMode ? handleUpdateExpense : handleAddExpense} className="space-y-4">
             <div className="space-y-2">
               <label className="block">Description:</label>
               <input
@@ -271,7 +347,30 @@ export default function TripDetail() {
                 ))}
               </div>
             </div>
-            <button type="submit" className="pixel-button w-full">ADD EXPENSE</button>
+            <div className="flex gap-4">
+              <button type="submit" className="pixel-button w-full">
+                {isEditMode ? 'UPDATE EXPENSE' : 'ADD EXPENSE'}
+              </button>
+              {isEditMode && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditMode(false);
+                    setEditingExpense(null);
+                    setNewExpense({
+                      description: '',
+                      amount: '',
+                      date: '',
+                      paidById: '',
+                      participantIds: []
+                    });
+                  }}
+                  className="pixel-button w-full bg-pink-700"
+                >
+                  CANCEL
+                </button>
+              )}
+            </div>
           </form>
         </div>
       </div>
@@ -282,12 +381,33 @@ export default function TripDetail() {
           <ul className="space-y-2">
             {expenses.map((expense) => (
               <li key={expense.id} className="pixel-borders-thin p-3">
-                <div className="flex justify-between">
-                  <span className="highlight-primary">{expense.description}</span>
-                  <span className="highlight-accent">¥{expense.amount}</span>
-                </div>
-                <div className="text-sm highlight-secondary">
-                  Paid by: {users.find(u => u.id === expense.paidById)?.name}
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <button 
+                      onClick={() => handleViewExpenseDetails(expense)}
+                      className="text-left w-full"
+                    >
+                      <span className="highlight-primary block">{expense.description}</span>
+                      <span className="highlight-accent">¥{expense.amount}</span>
+                      <div className="text-sm highlight-secondary">
+                        Paid by: {users.find(u => u.id === expense.paidById)?.name}
+                      </div>
+                    </button>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEditExpense(expense)}
+                      className="pixel-button"
+                    >
+                      EDIT
+                    </button>
+                    <button
+                      onClick={() => handleDeleteExpense(expense.id)}
+                      className="pixel-button bg-pink-700"
+                    >
+                      DEL
+                    </button>
+                  </div>
                 </div>
               </li>
             ))}
@@ -345,6 +465,52 @@ export default function TripDetail() {
           )}
         </div>
       </div>
+
+      {/* 费用详情弹窗 */}
+      {isExpenseModalOpen && selectedExpense && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+          <div className="pixel-card max-w-lg w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h2>EXPENSE DETAILS</h2>
+              <button
+                onClick={() => setIsExpenseModalOpen(false)}
+                className="pixel-button"
+              >
+                CLOSE
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <span className="highlight-secondary">Description:</span>
+                <p className="highlight-primary">{selectedExpense.description}</p>
+              </div>
+              <div>
+                <span className="highlight-secondary">Amount:</span>
+                <p className="highlight-accent">¥{selectedExpense.amount}</p>
+              </div>
+              <div>
+                <span className="highlight-secondary">Date:</span>
+                <p>{new Date(selectedExpense.date).toLocaleDateString()}</p>
+              </div>
+              <div>
+                <span className="highlight-secondary">Paid By:</span>
+                <p>{selectedExpense.paidBy.name}</p>
+              </div>
+              <div>
+                <span className="highlight-secondary">Participants:</span>
+                <ul className="mt-2 space-y-2">
+                  {selectedExpense.participants.map((participant) => (
+                    <li key={participant.id} className="pixel-borders-thin p-2">
+                      <span>{participant.user.name}</span>
+                      <span className="float-right highlight-accent">¥{participant.share}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 } 
